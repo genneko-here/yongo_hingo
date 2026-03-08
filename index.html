@@ -61,7 +61,6 @@
 
   /* ── VIEW MODE ── */
   .card-view { display: block; }
-  .card-edit { display: none; }
 
   /* Profile */
   .profile-section {
@@ -260,14 +259,6 @@
     letter-spacing: 0.1em;
   }
 
-  /* Icon area in edit card */
-  .icon-edit-area {
-    display: flex;
-    gap: 0.6rem;
-    align-items: flex-start;
-    margin-bottom: 0.65rem;
-  }
-
   .icon-preview-wrap {
     position: relative;
     width: 54px;
@@ -452,38 +443,6 @@
 
     <div class="footer">made with ❤ · digital card</div>
   </div>
-
-  <!-- EDIT MODE -->
-  <div class="card-edit" id="cardEdit">
-    <div class="edit-panel">
-      <div class="edit-title">✦ プロフィール編集</div>
-
-      <div class="field-group">
-        <label class="field-label">アイコン絵文字</label>
-        <input class="field-input" id="editEmoji" type="text" maxlength="2" placeholder="🎲">
-      </div>
-      <div class="field-group">
-        <label class="field-label">名前</label>
-        <input class="field-input" id="editName" type="text" placeholder="よんごひんご">
-      </div>
-      <div class="field-group">
-        <label class="field-label">ハンドル (@〜)</label>
-        <input class="field-input" id="editHandle" type="text" placeholder="@yongohingo">
-      </div>
-      <div class="field-group">
-        <label class="field-label">自己紹介</label>
-        <textarea class="field-input" id="editBio" placeholder="一言自己紹介を入力…"></textarea>
-      </div>
-
-      <div class="section-sub">リンク一覧</div>
-      <div class="links-editor" id="linksEditor"></div>
-      <button class="add-link-btn" onclick="addLinkField()">＋ リンクを追加</button>
-
-      <button class="save-btn" onclick="saveEdit()">保存して反映</button>
-      <button class="cancel-btn" onclick="cancelEdit()">キャンセル</button>
-    </div>
-  </div>
-
 </div>
 
 <script>
@@ -553,107 +512,7 @@ function toggleQR() {
   document.getElementById('qrBox').classList.toggle('visible', qrVisible);
 }
 
-// ── Edit mode ──
-function openEdit() {
-  document.getElementById('editEmoji').value = data.emoji || '';
-  document.getElementById('editName').value = data.name;
-  document.getElementById('editHandle').value = data.handle;
-  document.getElementById('editBio').value = data.bio || '';
-  renderLinksEditor();
-  document.getElementById('cardView').style.display = 'none';
-  document.getElementById('cardEdit').style.display = 'block';
-  document.getElementById('editBtnFloat').style.display = 'none';
-}
-
-function cancelEdit() {
-  document.getElementById('cardView').style.display = 'block';
-  document.getElementById('cardEdit').style.display = 'none';
-  document.getElementById('editBtnFloat').style.display = 'block';
-}
-
-function saveEdit() {
-  data.emoji = document.getElementById('editEmoji').value.trim() || '🎲';
-  data.name = document.getElementById('editName').value.trim() || 'My Card';
-  data.handle = document.getElementById('editHandle').value.trim();
-  data.bio = document.getElementById('editBio').value.trim();
-
-  // Collect links from editor
-  const cards = document.querySelectorAll('.link-edit-card');
-  data.links = [];
-  cards.forEach(card => {
-    const emoji = card.querySelector('.icon-emoji-input').value.trim() || '🔗';
-    const image = card.querySelector('.icon-img-data').value || '';
-    const label = card.querySelector('.link-label-input').value.trim();
-    const desc  = card.querySelector('.link-desc-input').value.trim();
-    const url   = card.querySelector('.link-url-input').value.trim();
-    if (label) data.links.push({ icon: emoji, image, label, desc, url });
-  });
-
-  save();
-  cancelEdit();
-  render();
-}
-
-function renderLinksEditor() {
-  const editor = document.getElementById('linksEditor');
-  editor.innerHTML = '';
-  data.links.forEach((l, i) => addLinkField(l));
-}
-
-function addLinkField(l = {}) {
-  const editor = document.getElementById('linksEditor');
-  const div = document.createElement('div');
-  div.className = 'link-edit-card';
-  const uid = 'lnk_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  const hasImg = !!l.image;
-  div.innerHTML = `
-    <button class="del-btn" onclick="this.closest('.link-edit-card').remove()">✕ 削除</button>
-    <div class="icon-edit-area">
-      <div class="icon-preview-wrap" onclick="document.getElementById('${uid}').click()">
-        <img class="icon-preview-img" ${hasImg ? `src="${l.image}" style="display:block"` : ''}>
-        <span class="icon-preview-emoji" ${hasImg ? 'style="display:none"' : ''}>${l.icon||'🔗'}</span>
-        <div class="icon-upload-overlay">📷<br>画像</div>
-        <input class="icon-file-input" id="${uid}" type="file" accept="image/*">
-        <input class="icon-img-data" type="hidden" value="${hasImg ? l.image : ''}">
-      </div>
-      <div class="icon-edit-fields">
-        <input class="field-input icon-emoji-input" type="text" placeholder="🔗 絵文字" value="${l.icon||'🔗'}" style="font-size:1rem;">
-        <button class="icon-clear-btn" onclick="clearIconImage(this)">✕ 画像を削除</button>
-      </div>
-    </div>
-    <div class="link-edit-row full">
-      <input class="field-input link-label-input" type="text" placeholder="リンク名" value="${l.label||''}">
-    </div>
-    <div class="link-edit-row full">
-      <input class="field-input link-desc-input" type="text" placeholder="説明文" value="${l.desc||''}">
-    </div>
-    <div class="link-edit-row full">
-      <input class="field-input link-url-input" type="url" placeholder="https://..." value="${l.url||''}">
-    </div>`;
-  editor.appendChild(div);
-
-  // File input handler
-  const fileInput = div.querySelector('.icon-file-input');
-  fileInput.addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const src = e.target.result;
-      const wrap = this.closest('.icon-preview-wrap');
-      const img = wrap.querySelector('.icon-preview-img');
-      const emo = wrap.querySelector('.icon-preview-emoji');
-      img.src = src;
-      img.style.display = 'block';
-      emo.style.display = 'none';
-      wrap.querySelector('.icon-img-data').value = src;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function clearIconImage(btn) {
-  const wrap = btn.closest('.link-edit-card').querySelector('.icon-preview-wrap');
   const img = wrap.querySelector('.icon-preview-img');
   const emo = wrap.querySelector('.icon-preview-emoji');
   img.src = '';
